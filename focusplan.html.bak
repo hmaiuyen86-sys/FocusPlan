@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FocusPlan — Quản lý deadline học tập</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#182033;--muted:#687188;--line:#e8ebf2;--accent:#5b5ce2;--danger:#e35d6a;--warn:#e7a52f;--ok:#2e9b68}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+.app{max-width:1200px;margin:auto;padding:28px 20px 50px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:24px}
+h1{margin:0;font-size:32px}.subtitle{color:var(--muted);margin-top:6px}.btn{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:white;font-weight:700}.btn.secondary{background:#eef0ff;color:#4547b8}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 5px 20px #1b23400b}.stat{padding:18px}.stat small{color:var(--muted)}.stat b{display:block;font-size:28px;margin-top:5px}
+.grid{display:grid;grid-template-columns:1.35fr .9fr;gap:18px}.card{padding:20px}.card h2{font-size:18px;margin:0 0 16px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.toolbar button{border:1px solid var(--line);background:white;border-radius:10px;padding:8px 12px;color:var(--muted)}.toolbar button.active{background:#eef0ff;color:#484ad0;border-color:#dfe1ff}
+.task{display:flex;align-items:center;gap:13px;padding:14px 0;border-bottom:1px solid var(--line)}.task:last-child{border-bottom:0}.check{width:20px;height:20px;accent-color:var(--accent)}.task-main{flex:1}.task-title{font-weight:700}.done .task-title{text-decoration:line-through;color:#98a0b3}.meta{font-size:13px;color:var(--muted);margin-top:4px}.badge{font-size:12px;font-weight:700;padding:5px 8px;border-radius:999px;white-space:nowrap}.urgent{background:#fff0f1;color:var(--danger)}.soon{background:#fff6df;color:#a66b00}.normal{background:#edf8f2;color:#267b55}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.cal-nav button{border:1px solid var(--line);background:white;border-radius:9px;padding:6px 10px}.week,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.week div{font-size:12px;text-align:center;color:var(--muted);padding:5px}.day{min-height:72px;border:1px solid var(--line);border-radius:10px;padding:7px;background:#fff}.day.muted{opacity:.35}.day.today{outline:2px solid #7778e8}.daynum{font-size:12px}.dot{display:block;margin-top:6px;background:#ececff;color:#4a4bc8;border-radius:5px;padding:2px 4px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+textarea{width:100%;min-height:190px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:12px;outline:none}.note-save{font-size:12px;color:var(--muted);margin-top:8px}
+form{display:grid;gap:10px}input,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;background:#fff}label{font-size:13px;color:var(--muted);font-weight:600}.actions{display:flex;gap:8px}
+@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.top{flex-direction:column}.top .btn{width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div><h1>FocusPlan</h1><div class="subtitle">Quản lý bài tập và deadline học tập — gọn gàng, dễ theo dõi.</div></div>
+    <button class="btn" onclick="document.getElementById('title').focus()">+ Thêm deadline</button>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><small>Tổng bài tập</small><b id="total">0</b></div>
+    <div class="stat"><small>Sắp đến hạn</small><b id="soon">0</b></div>
+    <div class="stat"><small>Đã hoàn thành</small><b id="completed">0</b></div>
+    <div class="stat"><small>Trong 7 ngày</small><b id="week">0</b></div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Deadline của bạn</h2>
+      <div class="toolbar">
+        <button class="active" data-filter="all">Tất cả</button>
+        <button data-filter="pending">Chưa xong</button>
+        <button data-filter="done">Đã xong</button>
+      </div>
+      <div id="tasks"></div>
+    </section>
+
+    <aside class="card">
+      <h2>Thêm deadline mới</h2>
+      <form id="form">
+        <div><label>Tên bài tập</label><input id="title" required placeholder="VD: Báo cáo Marketing"></div>
+        <div><label>Môn học</label><input id="subject" placeholder="VD: Marketing"></div>
+        <div><label>Ngày deadline</label><input id="date" type="date" required></div>
+        <div><label>Ưu tiên</label><select id="priority"><option value="high">Cao</option><option value="medium" selected>Trung bình</option><option value="low">Thấp</option></select></div>
+        <button class="btn" type="submit">Lưu deadline</button>
+      </form>
+      <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+      <h2>Ghi chú</h2>
+      <textarea id="notes" placeholder="Viết kế hoạch, ý tưởng hoặc việc cần nhớ..."></textarea>
+      <div class="note-save">Tự động lưu trên trình duyệt của bạn.</div>
+    </aside>
+
+    <section class="card" style="grid-column:1/-1">
+      <div class="calendar-head">
+        <h2 style="margin:0" id="monthTitle"></h2>
+        <div class="cal-nav"><button onclick="changeMonth(-1)">‹</button> <button onclick="changeMonth(1)">›</button></div>
+      </div>
+      <div class="week"><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div></div>
+      <div class="days" id="calendar"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+const key="focusplan_tasks_v1", noteKey="focusplan_notes_v1";
+let tasks=JSON.parse(localStorage.getItem(key)||"[]");
+let filter="all", view=new Date(); view.setDate(1);
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=new Date(); today.setHours(0,0,0,0);
+const diffDays=s=>Math.ceil((new Date(s+"T00:00:00")-today)/86400000);
+
+if(!tasks.length){
+ tasks=[
+  {id:1,title:"Bài thuyết trình nhóm",subject:"Kỹ năng giao tiếp",date:iso(new Date(today.getTime()+1*86400000)),priority:"high",done:false},
+  {id:2,title:"Bài tập Toán cao cấp",subject:"Toán",date:iso(new Date(today.getTime()+3*86400000)),priority:"medium",done:false},
+  {id:3,title:"Đọc tài liệu tuần 6",subject:"Kinh tế",date:iso(new Date(today.getTime()+6*86400000)),priority:"low",done:false}
+ ];
+ save();
+}
+document.getElementById("notes").value=localStorage.getItem(noteKey)||"";
+document.getElementById("notes").addEventListener("input",e=>localStorage.setItem(noteKey,e.target.value));
+document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.remove("active"));b.classList.add("active");render()});
+
+function save(){localStorage.setItem(key,JSON.stringify(tasks))}
+function render(){
+ const list=tasks.filter(t=>filter==="all"||filter==="pending"&&!t.done||filter==="done"&&t.done).sort((a,b)=>a.date.localeCompare(b.date));
+ document.getElementById("tasks").innerHTML=list.length?list.map(t=>{
+   let d=diffDays(t.date), label=d<0?"Quá hạn":d===0?"Hôm nay":d===1?"Còn 1 ngày":`Còn ${d} ngày`;
+   let cls=d<=1&&!t.done?"urgent":d<=3&&!t.done?"soon":"normal";
+   return `<div class="task ${t.done?"done":""}">
+    <input class="check" type="checkbox" ${t.done?"checked":""} onchange="toggle(${t.id})">
+    <div class="task-main"><div class="task-title">${esc(t.title)}</div><div class="meta">${esc(t.subject||"Chưa có môn")} · ${fmt(t.date)}</div></div>
+    <span class="badge ${cls}">${label}</span>
+    <button aria-label="Xóa" onclick="removeTask(${t.id})" style="border:0;background:none;color:#9aa1b2">✕</button>
+   </div>`
+ }).join(""):'<div class="empty">Không có deadline phù hợp.</div>';
+ document.getElementById("total").textContent=tasks.length;
+ document.getElementById("completed").textContent=tasks.filter(t=>t.done).length;
+ document.getElementById("soon").textContent=tasks.filter(t=>!t.done&&diffDays(t.date)>=0&&diffDays(t.date)<=3).length;
+ document.getElementById("week").textContent=tasks.filter(t=>!t.done&&diffDays(t.date)>=0&&diffDays(t.date)<=7).length;
+ renderCalendar();
+}
+function fmt(s){return new Date(s+"T00:00:00").toLocaleDateString("vi-VN",{day:"2-digit",month:"2-digit",year:"numeric"})}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function toggle(id){let t=tasks.find(x=>x.id===id);t.done=!t.done;save();render()}
+function removeTask(id){if(confirm("Xóa deadline này?")){tasks=tasks.filter(t=>t.id!==id);save();render()}}
+document.getElementById("form").onsubmit=e=>{
+ e.preventDefault();
+ tasks.push({id:Date.now(),title:title.value.trim(),subject:subject.value.trim(),date:date.value,priority:priority.value,done:false});
+ save();e.target.reset();render();
+};
+function renderCalendar(){
+ const y=view.getFullYear(),m=view.getMonth();
+ document.getElementById("monthTitle").textContent=`Tháng ${m+1}/${y}`;
+ const first=new Date(y,m,1), last=new Date(y,m+1,0);
+ let start=(first.getDay()+6)%7, cells=[];
+ for(let i=0;i<start;i++)cells.push('<div class="day muted"></div>');
+ for(let d=1;d<=last.getDate();d++){
+  const ds=`${y}-${pad(m+1)}-${pad(d)}`, isToday=ds===iso(today);
+  const ts=tasks.filter(t=>t.date===ds);
+  cells.push(`<div class="day ${isToday?"today":""}"><div class="daynum">${d}</div>${ts.slice(0,3).map(t=>`<span class="dot">${esc(t.title)}</span>`).join("")}</div>`);
+ }
+ document.getElementById("calendar").innerHTML=cells.join("");
+}
+function changeMonth(n){view.setMonth(view.getMonth()+n);renderCalendar()}
+render();
+</script>
+</body>
+</html>
